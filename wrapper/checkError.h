@@ -1,5 +1,5 @@
-#pragma once;
+#pragma once
 
-#define GL_CALL(func) func;checkError();
+#define GL_CALL(func) func; checkError();
 
 void checkError();

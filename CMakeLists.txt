@@ -18,9 +18,9 @@ link_directories (
 	
 
 add_subdirectory(wrapper)
-
+add_subdirectory(application)
 add_executable(glStudy "main.cpp" "glad.c")
 
 #lib链接
 
-target_link_libraries(glStudy glfw3.lib wrapper)
+target_link_libraries(glStudy glfw3.lib wrapper app)
