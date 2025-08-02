@@ -8,6 +8,7 @@ void onResize(int width, int height);
 void onKey(int key, int scancode, int action, int mods);
 void testShader();
 void testBindInterleavedBuffer();
+void prepareVAO();
 void render();
 
 GLint program;
@@ -31,8 +32,8 @@ int main() {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
 	testShader();
-	testBindInterleavedBuffer();
-
+	//testBindInterleavedBuffer();
+	prepareVAO();
 	// 窗体循环
 	while (app->update()) {
 
@@ -226,5 +227,46 @@ void render() {
 	* GL_LINES 0 1|2 3|3 4|4 5|5 6
 	* GL_LINES_STRIP 0 1|1 2|2 3|3 4|4 5|5 6
 	*/
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	//glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	glDrawElements(GL_TRIANGLES, 
+					6,					// 读几次索引
+					GL_UNSIGNED_INT,
+					0);					// 偏移量 比如要偏移3个就写 (void*)(sizeof(int)*3)
+}
+
+// 创建vbo ebo vao数据
+void prepareVAO() {
+	float positions[] = {
+		-0.5f,-0.5f,0.0f,
+		0.5f,-0.5f,0.0f,
+		0.0f,0.5f,0.0f,
+		0.5f,0.5f,0.0f,
+	};
+	unsigned int indices[] = {
+		0,1,2,
+		2,1,3
+	};
+	// 创建vbo
+	GLuint vbo = 0;
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
+	//创建ebo
+	GLuint ebo = 0;
+	glGenBuffers(1, &ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	//创建vao
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	//绑定vbo ebo
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	// 将Ebo和vao关联
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+
+	// 切换vao为空状态
+	glBindVertexArray(0);
 }
