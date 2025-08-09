@@ -7,6 +7,10 @@ project(OpenGL)
 #本工程支持的C++版本
 set(CMAKE_CXX_STANDARD 11)
 
+#拷贝资源到二进制目录
+file(GLOB ASSETS "./assets")
+
+file(COPY ${ASSETS} DESTINATION ${CMAKE_BINARY_DIR})
 
 include_directories(
 	SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/thirdParty/include
@@ -19,8 +23,9 @@ link_directories (
 
 add_subdirectory(wrapper)
 add_subdirectory(application)
+add_subdirectory(glframework)
 add_executable(glStudy "main.cpp" "glad.c")
 
 #lib链接
 
-target_link_libraries(glStudy glfw3.lib wrapper app)
+target_link_libraries(glStudy glfw3.lib wrapper app fw)

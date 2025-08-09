@@ -1,18 +1,17 @@
 #include <iostream>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "glframework/core.h"
+#include "glframework/shader.h"
 #include "wrapper/checkError.h"
 #include "application/Application.h"
 
 void onResize(int width, int height);
 void onKey(int key, int scancode, int action, int mods);
-void testShader();
 void testBindInterleavedBuffer();
 void prepareVAO();
 void render();
 
-GLint program;
 GLuint vao;
+Shader* shader;
 
 int main() {
 
@@ -31,7 +30,8 @@ int main() {
 	glViewport(0, 0, 800, 600);
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-	testShader();
+	shader = new Shader("assets/shaders/vertex.glsl","assets/shaders/fragment.glsl");
+
 	//testBindInterleavedBuffer();
 	prepareVAO();
 	// 窗体循环
@@ -157,66 +157,10 @@ void testBindInterleavedBuffer() {
 	glBindVertexArray(0);//将当前的vao解绑
 }
 
-void testShader() {
-	const char* vertexShaderSource = 
-		"#version 460 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-		"void main()\n"
-		"{\n"
-		"	gl_Position = vec4(aPos.x,aPos.y,aPos.z,1.0);\n"
-		"}\0";
-	const char* fragmentShaderSource = 
-		"#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"void main()\n"
-		"{\n"
-		"	FragColor = vec4(1.0f,0.5f,0.2f,1.0);\n"
-		"}\0";
-	// 创建vs和fs的shader程序
-	GLuint vertex, fragment;//程序的句柄
-	vertex = glCreateShader(GL_VERTEX_SHADER);
-	fragment = glCreateShader(GL_FRAGMENT_SHADER);
-	// 为shader程序输入源码
-	glShaderSource(vertex, 1, &vertexShaderSource, NULL);//因为source是\0结尾的，无需指定长度
-	glShaderSource(fragment, 1, &fragmentShaderSource, NULL);//因为source是\0结尾的，无需指定长度
-	// 编译shader
-	int isSuccess = 0;
-	char infoLog[1024];
-	glCompileShader(vertex);
-	glGetShaderiv(vertex,GL_COMPILE_STATUS,&isSuccess);
-	if (!isSuccess) {
-		glGetShaderInfoLog(vertex, 1024, NULL, infoLog);
-		std::cout << "编译顶点着色器出错:\n" << infoLog << "\n";
-	}
-	glCompileShader(fragment);
-	glGetShaderiv(fragment, GL_COMPILE_STATUS, &isSuccess);
-	if (!isSuccess) {
-		glGetShaderInfoLog(fragment, 1024, NULL, infoLog);
-		std::cout << "编译片段着色器出错:\n" << infoLog << "\n";
-	}
-	// 创建一个program程序
-	program = 0;
-	program = glCreateProgram();
-	// 编译好的fs vs放入program
-	glAttachShader(program, vertex);
-	glAttachShader(program, fragment);
-	// program链接生成可执行程序
-	glLinkProgram(program);
-	glGetProgramiv(program, GL_LINK_STATUS, &isSuccess);
-	if (!isSuccess) {
-		glGetProgramInfoLog(program, 1024, NULL, infoLog);
-		std::cout << "着色器链接出错:\n" << infoLog << "\n";
-	}
-	// 清理
-	glDeleteShader(vertex);
-	glDeleteShader(fragment);
-}
-
 void render() {
 	// 画布清理
 	glClear(GL_COLOR_BUFFER_BIT);
-	// 绑定program
-	glUseProgram(program);
+	shader->begin();
 	// 绑定vao
 	glBindVertexArray(vao);
 	// 绘制
@@ -233,25 +177,35 @@ void render() {
 					6,					// 读几次索引
 					GL_UNSIGNED_INT,
 					0);					// 偏移量 比如要偏移3个就写 (void*)(sizeof(int)*3)
+	shader->end();
 }
 
 // 创建vbo ebo vao数据
 void prepareVAO() {
 	float positions[] = {
 		-0.5f,-0.5f,0.0f,
-		0.5f,-0.5f,0.0f,
+		0.5f,-0.4f,0.0f,
 		0.0f,0.5f,0.0f,
 		0.5f,0.5f,0.0f,
+	};
+	float colors[] = {
+		1.0f,0.0f,0.0f,
+		0.0f,1.0f,0.0f,
+		0.0f,0.0f,1.0f,
+		1.0f,1.0f,0.0f
 	};
 	unsigned int indices[] = {
 		0,1,2,
 		2,1,3
 	};
 	// 创建vbo
-	GLuint vbo = 0;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	GLuint positionVbo = 0,colorVbo = 0;
+	glGenBuffers(1, &positionVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, positionVbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
+	glGenBuffers(1, &colorVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, colorVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
 	//创建ebo
 	GLuint ebo = 0;
 	glGenBuffers(1, &ebo);
@@ -260,13 +214,17 @@ void prepareVAO() {
 	//创建vao
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
-	//绑定vbo ebo
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	//绑定vbo
+	glBindBuffer(GL_ARRAY_BUFFER, positionVbo);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, colorVbo);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
 	// 将Ebo和vao关联
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-
 	// 切换vao为空状态
 	glBindVertexArray(0);
 }
