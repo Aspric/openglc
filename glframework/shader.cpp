@@ -1,9 +1,12 @@
 #include "shader.h"
+#include "shader.h"
+#include "shader.h"
 #include "../wrapper/checkError.h"
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <string>
 
 Shader::Shader(const char* vertextFilePath, const char* fragmentFilePath)
 {
@@ -88,4 +91,20 @@ void Shader::begin()
 void Shader::end()
 {
 	glUseProgram(0);
+}
+
+void Shader::setFloat(const std::string& name, float value)
+{
+	// 获取名为name的uniform所在的位置
+	GLuint location = glGetUniformLocation(mProgram, name.c_str());
+	// 更新
+	glUniform1f(location, value);
+}
+
+void Shader::setVector3(const std::string& name, float value1, float value2, float value3)
+{
+	// 获取名为name的uniform所在的位置
+	GLuint location = glGetUniformLocation(mProgram, name.c_str());
+	// 更新
+	glUniform3f(location, value1, value2, value3);
 }

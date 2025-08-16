@@ -4,6 +4,9 @@
 #include "wrapper/checkError.h"
 #include "application/Application.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "application/stb_image.h"
+
 void onResize(int width, int height);
 void onKey(int key, int scancode, int action, int mods);
 void testBindInterleavedBuffer();
@@ -11,6 +14,7 @@ void prepareVAO();
 void render();
 
 GLuint vao;
+GLuint texture;//纹理对象
 Shader* shader;
 
 int main() {
@@ -161,6 +165,8 @@ void render() {
 	// 画布清理
 	glClear(GL_COLOR_BUFFER_BIT);
 	shader->begin();
+	shader->setFloat("time", glfwGetTime());
+
 	// 绑定vao
 	glBindVertexArray(vao);
 	// 绘制
@@ -227,4 +233,33 @@ void prepareVAO() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	// 切换vao为空状态
 	glBindVertexArray(0);
+}
+
+void prepareTexture() {
+	// stbimage读取图片
+	int width, height, channels;
+	//反转Y轴（因为gl的xy轴是屏幕左下角，y向上，x向右,而图片的y向下)
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load("assets/texture/deepdark.jpg",&width,&height,&channels,STBI_rgb_alpha);
+	// 生成纹理并激活纹理单元绑定
+	glGenTextures(1, &texture);
+	/*
+	*  图片数据---纹理单元---采样器
+	*/
+	// 激活0号纹理单元
+	glActiveTexture(GL_TEXTURE0);
+	// 将GL状态机的2D纹理插槽与纹理数据绑定
+	glBindTexture(GL_TEXTURE_2D,texture);// 执行完后纹理单元就会和数据对应
+	// 将纹理对象传输给GPU，开辟显存
+	glTexImage2D(GL_TEXTURE_2D,	//哪一个插槽
+		0,						//mipmap的哪个层
+		GL_RGBA,				//希望的图片像素格式
+		width, height,			//最终宽高
+		0,						//填0，没有用
+		GL_RGBA,				//单通道数据格式
+		GL_UNSIGNED_BYTE,		//数据类型
+		data					//数据指针
+	);
+	// 释放数据
+	stbi_image_free(data);
 }

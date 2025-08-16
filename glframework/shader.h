@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.h"
+#include <string>
 
 class Shader {
 public:
@@ -12,6 +13,11 @@ public:
 
 	// 结束使用Shader
 	void end();
+
+	// 设置float类型的uniform
+	void setFloat(const std::string& name, float value);
+
+	void setVector3(const std::string& name, float value1, float value2, float value3);
 private:
 	GLuint mProgram{ 0 };
 
